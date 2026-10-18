@@ -1,0 +1,52 @@
+# ==========================================
+# 1. Python Environment & Bytecode
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# ==========================================
+# 2. Heavy Datasets & Cropped Images
+# ==========================================
+# Ignore the entire crop dataset folder
+data/clf-data/
+
+# Ignore videos (exceeds GitHub limits)
+*.mp4
+*.avi
+*.mov
+
+# ==========================================
+# 3. Model Weights & Databases
+# ==========================================
+*.pt
+*.onnx
+*.weights
+*.db
+data/visionpark.db
+
+# ==========================================
+# 4. Debug Overlays & Intermediate Previews
+# ==========================================
+data/*_test.png
+data/*_preview.png
+data/*_debug*.png
+data/occupancy_result_*.png
+data/performance_curves.png
+data/yolo_debug_output.png
+
+# Keep core JSONs & final curves, but ignore dynamic logs
+data/parking_events.json
+data/parking_state_history.json
+
+# ==========================================
+# 5. OS & IDE Junk
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

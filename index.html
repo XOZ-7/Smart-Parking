@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VISIONPARK - Live Digital Twin Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; color: var(--accent-blue); }
+        .status-badge {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: var(--accent-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        /* Metrics Row */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-muted); }
+        .card .value { font-size: 2rem; font-weight: bold; }
+
+        /* Zones & Main Content */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        /* Slot Grid */
+        .slot-container {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .grid-header { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+            gap: 6px;
+            max-height: 450px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .slot-box {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .slot-box:hover { transform: scale(1.15); }
+        .occupied { background-color: var(--accent-red); }
+        .vacant { background-color: var(--accent-green); }
+
+        /* Event Feed */
+        .events-container {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .event-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #334155;
+            font-size: 0.85rem;
+        }
+
+        .event-item:last-child { border-bottom: none; }
+        .timestamp { color: var(--text-muted); font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>VISIONPARK</h1>
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Real-Time Digital Twin & Parking Telemetry</span>
+        </div>
+        <div class="status-badge" id="api-status">API ONLINE</div>
+    </header>
+
+    <!-- Top Summary Metrics -->
+    <section class="metrics-grid">
+        <div class="card">
+            <h3>TOTAL CAPACITY</h3>
+            <div class="value" id="total-slots">--</div>
+        </div>
+        <div class="card">
+            <h3>OCCUPIED SLOTS</h3>
+            <div class="value" style="color: var(--accent-red);" id="occupied-slots">--</div>
+        </div>
+        <div class="card">
+            <h3>VACANT SLOTS</h3>
+            <div class="value" style="color: var(--accent-green);" id="vacant-slots">--</div>
+        </div>
+        <div class="card">
+            <h3>UTILIZATION RATE</h3>
+            <div class="value" style="color: var(--accent-blue);" id="occupancy-rate">--%</div>
+        </div>
+    </section>
+
+    <!-- Main Workspace -->
+    <div class="main-layout">
+        <!-- Live Interactive Grid -->
+        <div class="slot-container">
+            <div class="grid-header">
+                <h2 style="margin:0; font-size: 1.2rem;">Live Spatial Slot Grid</h2>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">🟢 Vacant | 🔴 Occupied</span>
+            </div>
+            <div class="slot-grid" id="slot-grid">
+                <!-- Dynamically populated via JavaScript -->
+            </div>
+        </div>
+
+        <!-- Live Event Stream Feed -->
+        <div class="events-container">
+            <h2 style="margin:0 0 15px 0; font-size: 1.2rem;">State Change Events</h2>
+            <ul class="event-list" id="event-list">
+                <!-- Dynamically populated via JavaScript -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:8000/api/v1";
+
+        async function fetchDashboardData() {
+            try {
+                // 1. Fetch Summary Metrics
+                const summaryRes = await fetch(`${API_BASE}/metrics/summary`);
+                const summary = await summaryRes.json();
+                
+                document.getElementById('total-slots').innerText = summary.total_slots;
+                document.getElementById('occupied-slots').innerText = summary.occupied_slots;
+                document.getElementById('vacant-slots').innerText = summary.vacant_slots;
+                document.getElementById('occupancy-rate').innerText = `${summary.occupancy_rate_percent}%`;
+
+                // 2. Fetch Live Slot States & Render Grid
+                const slotsRes = await fetch(`${API_BASE}/slots/live`);
+                const slotsData = await slotsRes.json();
+                
+                const gridContainer = document.getElementById('slot-grid');
+                gridContainer.innerHTML = ''; // Clear previous frame
+
+                slotsData.slots.forEach(slot => {
+                    const div = document.createElement('div');
+                    div.className = `slot-box ${slot.status}`;
+                    div.innerText = slot.slot_id.replace('-', '');
+                    div.title = `Slot: ${slot.slot_id} | Zone: ${slot.zone} | Status: ${slot.status.toUpperCase()}`;
+                    gridContainer.appendChild(div);
+                });
+
+                // 3. Fetch Recent Events
+                const eventsRes = await fetch(`${API_BASE}/events/history?limit=10`);
+                const eventsData = await eventsRes.json();
+                
+                const eventList = document.getElementById('event-list');
+                eventList.innerHTML = '';
+
+                eventsData.events.forEach(evt => {
+                    const li = document.createElement('li');
+                    li.className = 'event-item';
+                    const timeStr = evt.timestamp.split('T')[1]?.substring(0, 8) || evt.timestamp;
+                    
+                    const stateColor = evt.new_state === 'occupied' ? 'var(--accent-red)' : 'var(--accent-green)';
+                    
+                    li.innerHTML = `
+                        <div><strong>${evt.slot_id}</strong> (${evt.zone}) → <span style="color:${stateColor}; font-weight:bold;">${evt.new_state.toUpperCase()}</span></div>
+                        <div class="timestamp">${timeStr} | Prior: ${evt.previous_state}</div>
+                    `;
+                    eventList.appendChild(li);
+                });
+
+            } catch (err) {
+                console.error("Error fetching data from VISIONPARK API:", err);
+                document.getElementById('api-status').innerText = "API OFFLINE";
+                document.getElementById('api-status').style.color = "var(--accent-red)";
+                document.getElementById('api-status').style.backgroundColor = "rgba(239, 68, 68, 0.2)";
+            }
+        }
+
+        // Fetch metrics on load & auto-refresh every 3 seconds
+        fetchDashboardData();
+        setInterval(fetchDashboardData, 3000);
+    </script>
+</body>
+</html>

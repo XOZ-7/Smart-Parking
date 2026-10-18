@@ -1,0 +1,19 @@
+import json
+import os
+
+# Real binary ground truth for frame_0 (1 = Occupied, 0 = Vacant)
+# Based on your accurate frame_0 output:
+gt_data = {
+    "P1": 1, "P2": 1, "P3": 1, "P4": 1, "P5": 1, "P6": 1, "P7": 0, "P8": 1, "P9": 1, "P10": 1, "P11": 1, "P12": 1,
+    "P13": 1, "P14": 1, "P15": 1, "P16": 1, "P17": 1, "P18": 1, "P19": 1, "P20": 1, "P21": 1, "P22": 1, "P23": 1, "P24": 1,
+    "P25": 1, "P26": 1, "P27": 0, "P28": 1, "P29": 1, "P30": 1, "P31": 1, "P32": 1, "P33": 1, "P34": 1, "P35": 0, "P36": 1,
+    "P37": 1, "P38": 1, "P39": 1, "P40": 1, "P41": 0, "P42": 1, "P43": 1, "P44": 0, "P45": 1, "P46": 0, "P47": 1, "P48": 1,
+    "P49": 1, "P50": 1, "P51": 1, "P52": 1, "P53": 1, "P54": 1, "P55": 0, "P56": 1, "P57": 0, "P58": 1, "P59": 0, "P60": 1,
+    "P61": 0, "P62": 1, "P63": 1, "P64": 1, "P65": 1, "P66": 1, "P67": 1, "P68": 0, "P69": 0, "P70": 1, "P71": 1
+}
+
+os.makedirs("data", exist_ok=True)
+with open("data/ground_truth.json", "w") as f:
+    json.dump(gt_data, f, indent=2)
+
+print("Saved ground_truth.json for 71 slots!")
